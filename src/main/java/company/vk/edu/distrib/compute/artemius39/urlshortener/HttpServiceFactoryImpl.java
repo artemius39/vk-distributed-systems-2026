@@ -12,7 +12,6 @@ import company.vk.edu.distrib.compute.urlshortener.UrlShortenerTest;
 public class HttpServiceFactoryImpl extends AbstractHttpServiceFactory<UrlShortenerServiceImpl> {
     @Override
     protected UrlShortenerServiceImpl doCreate(int port) throws IOException {
-        // A stable directory per port allows service instances to recover their data after a restart.
         Path dataRoot = Path.of(System.getProperty("artemius39.urlshortener.dataDir",
             Path.of(System.getProperty("user.home"), ".urlshortener", "artemius39").toString()));
         Path directory = dataRoot.resolve(Integer.toString(port));
