@@ -1,19 +1,15 @@
 package company.vk.edu.distrib.compute.artemius39.urlshortener;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.NoSuchElementException;
 import java.util.stream.IntStream;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.Dao;
-import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
 
-public class UrlShortenerServiceImpl implements UrlShortenerService {
-    private static final String LINKS_URI = "/v0/links/";
+public class UrlShortenerHandler {
     private static final String ALPHABET = IntStream.concat(
             IntStream.concat(
                 IntStream.rangeClosed('0', '9'),
@@ -24,87 +20,25 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         .toString();
     private static final int SHORT_URL_LENGTH = 10;
     private static final String ROOT_URI = "/";
-    private static final int SERVER_STOP_DELAY = 1;
     private static final String HOSTNAME = "localhost";
+    private static final int AUTH_FIELD_COUNT = 2;
 
-    private final HttpServer server;
     private final Dao<String> linkDao;
     private final Dao<String> authDao;
     private final SecureRandom random;
+    private final int port;
 
-    public UrlShortenerServiceImpl(int port, Dao<String> linkDao, Dao<String> authDao) throws IOException {
+    public UrlShortenerHandler(Dao<String> linkDao, Dao<String> authDao, SecureRandom random, int port) {
         this.linkDao = linkDao;
-        this.server = createServer(port);
         this.authDao = authDao;
-        this.random = new SecureRandom();
+        this.random = random;
+        this.port = port;
     }
 
-    private HttpServer createServer(int port) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(HOSTNAME, port), 0);
-        server.createContext(
-            "/v0/status", exchange -> {
-                try (exchange) {
-                    if ("GET".equals(exchange.getRequestMethod())) {
-                        getStatus(exchange);
-                    } else {
-                        HttpUtils.methodNotAllowed(exchange);
-                    }
-                }
-            }
-        );
-        server.createContext(
-            LINKS_URI, exchange -> {
-                try (exchange) {
-                    switch (exchange.getRequestMethod()) {
-                        case "GET" -> getLink(exchange);
-                        case "PUT" -> changeLink(exchange);
-                        case "DELETE" -> deleteLink(exchange);
-                        default -> HttpUtils.methodNotAllowed(exchange);
-                    }
-                }
-            }
-        );
-        server.createContext(
-            "/v0/links", exchange -> {
-                try (exchange) {
-                    if ("POST".equals(exchange.getRequestMethod())) {
-                        createLink(exchange);
-                    } else {
-                        HttpUtils.methodNotAllowed(exchange);
-                    }
-                }
-            }
-        );
-        server.createContext(
-            ROOT_URI, exchange -> {
-                try (exchange) {
-                    if ("GET".equals(exchange.getRequestMethod())) {
-                        redirectLink(exchange);
-                    } else {
-                        HttpUtils.methodNotAllowed(exchange);
-                    }
-                }
-            }
-        );
-        server.createContext(
-            "/internal/users", exchange -> {
-                try (exchange) {
-                    if ("POST".equals(exchange.getRequestMethod())) {
-                        registerUser(exchange);
-                    } else {
-                        HttpUtils.methodNotAllowed(exchange);
-                    }
-                }
-            }
-        );
-
-        return server;
-    }
-
-    private void registerUser(HttpExchange exchange) throws IOException {
+    public void registerUser(HttpExchange exchange) throws IOException {
         String requestString = HttpUtils.getRequestBodyAsString(exchange);
         String[] split = requestString.split(":");
-        if (split.length != 2) {
+        if (split.length != AUTH_FIELD_COUNT) {
             HttpUtils.unprocessableEntity(exchange);
             return;
         }
@@ -114,31 +48,15 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         exchange.sendResponseHeaders(200, -1);
     }
 
-    @Override
-    public void start() {
-        server.start();
-    }
-
-    @Override
-    public void stop() {
-        try {
-            server.stop(SERVER_STOP_DELAY);
-            linkDao.close();
-            authDao.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void getStatus(HttpExchange httpExchange) throws IOException {
+    public void getStatus(HttpExchange httpExchange) throws IOException {
         httpExchange.sendResponseHeaders(200, -1);
     }
 
-    private void getLink(HttpExchange httpExchange) throws IOException {
+    public void getLink(HttpExchange httpExchange) throws IOException {
         if (!checkAuth(httpExchange)) {
             return;
         }
-        String id = HttpUtils.getPathParam(httpExchange, LINKS_URI);
+        String id = HttpUtils.getPathParam(httpExchange, UrlShortenerController.LINKS_URI);
         if (!isValidShortLink(httpExchange, id)) {
             return;
         }
@@ -152,7 +70,7 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         }
     }
 
-    private void createLink(HttpExchange exchange) throws IOException {
+    public void createLink(HttpExchange exchange) throws IOException {
         if (!checkAuth(exchange)) {
             return;
         }
@@ -166,11 +84,11 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         HttpUtils.sendResponse(exchange, 201, fullLink);
     }
 
-    private void changeLink(HttpExchange exchange) throws IOException {
+    public void changeLink(HttpExchange exchange) throws IOException {
         if (!checkAuth(exchange)) {
             return;
         }
-        String linkToChange = HttpUtils.getPathParam(exchange, LINKS_URI);
+        String linkToChange = HttpUtils.getPathParam(exchange, UrlShortenerController.LINKS_URI);
         if (!isValidShortLink(exchange, linkToChange)) {
             return;
         }
@@ -189,11 +107,11 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         }
     }
 
-    private void deleteLink(HttpExchange exchange) throws IOException {
+    public void deleteLink(HttpExchange exchange) throws IOException {
         if (!checkAuth(exchange)) {
             return;
         }
-        String linkToDelete = HttpUtils.getPathParam(exchange, LINKS_URI);
+        String linkToDelete = HttpUtils.getPathParam(exchange, UrlShortenerController.LINKS_URI);
         if (!isValidShortLink(exchange, linkToDelete)) {
             return;
         }
@@ -201,7 +119,7 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         exchange.sendResponseHeaders(202, -1);
     }
 
-    private void redirectLink(HttpExchange exchange) throws IOException {
+    public void redirectLink(HttpExchange exchange) throws IOException {
         String shortLink = HttpUtils.getPathParam(exchange, ROOT_URI);
         if (!isValidShortLink(exchange, shortLink)) {
             return;
@@ -218,7 +136,7 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
     }
 
     private String getFullLink(String shortLink) {
-        return "http://%s:%d/%s".formatted(HOSTNAME, server.getAddress().getPort(), shortLink);
+        return "http://%s:%d/%s".formatted(HOSTNAME, port, shortLink);
     }
 
     private boolean checkAuth(HttpExchange httpExchange) throws IOException {
@@ -239,8 +157,8 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
     }
 
     private String generateShortUrl() throws IOException {
+        StringBuilder sb = new StringBuilder(SHORT_URL_LENGTH);
         while (true) {
-            StringBuilder sb = new StringBuilder(SHORT_URL_LENGTH);
             for (int i = 0; i < SHORT_URL_LENGTH; i++) {
                 sb.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
             }
@@ -250,6 +168,7 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
             } catch (NoSuchElementException e) {
                 return result;
             }
+            sb.delete(0, sb.length());
         }
     }
 
@@ -274,5 +193,10 @@ public class UrlShortenerServiceImpl implements UrlShortenerService {
         }
         HttpUtils.unprocessableEntity(exchange);
         return false;
+    }
+
+    public void close() throws IOException {
+        linkDao.close();
+        authDao.close();
     }
 }

@@ -24,7 +24,7 @@ public final class PersistentDao implements Dao<String> {
     }
 
     @Override
-    public synchronized String get(String key) throws IOException {
+    public String get(String key) throws IOException {
         try {
             return Files.readString(pathForKey(key), StandardCharsets.UTF_8);
         } catch (NoSuchFileException e) {
@@ -33,7 +33,7 @@ public final class PersistentDao implements Dao<String> {
     }
 
     @Override
-    public synchronized void upsert(String key, String value) throws IOException {
+    public void upsert(String key, String value) throws IOException {
         Path target = pathForKey(key);
         Objects.requireNonNull(value);
         Path temporary = Files.createTempFile(directory, "update-", ".tmp");
@@ -47,7 +47,7 @@ public final class PersistentDao implements Dao<String> {
     }
 
     @Override
-    public synchronized void delete(String key) throws IOException {
+    public void delete(String key) throws IOException {
         Files.deleteIfExists(pathForKey(key));
     }
 

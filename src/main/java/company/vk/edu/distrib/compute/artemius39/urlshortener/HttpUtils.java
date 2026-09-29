@@ -13,6 +13,7 @@ import com.sun.net.httpserver.HttpExchange;
 
 public final class HttpUtils {
     private static final String BASIC_AUTH_PREFIX = "Basic ";
+    private static final int AUTH_FIELD_COUNT = 2;
 
     private HttpUtils() {
         // utility class
@@ -68,7 +69,7 @@ public final class HttpUtils {
             byte[] decoded = Base64.getDecoder().decode(authorization.substring(BASIC_AUTH_PREFIX.length()).strip());
             String credentials = new String(decoded, StandardCharsets.UTF_8);
             String[] split = credentials.split(":");
-            if (split.length != 2) {
+            if (split.length != AUTH_FIELD_COUNT) {
                 return null;
             }
             String username = split[0];
