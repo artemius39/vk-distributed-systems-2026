@@ -3,8 +3,10 @@ package company.vk.edu.distrib.compute.artemius39.urlshortener;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 import com.sun.net.httpserver.HttpServer;
+import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
 
 public class UrlShortenerController implements UrlShortenerService {
@@ -15,6 +17,13 @@ public class UrlShortenerController implements UrlShortenerService {
 
     private final HttpServer server;
     private final UrlShortenerHandler handler;
+    private State state = State.NEW;
+
+    private enum State {
+        NEW,
+        STARTED,
+        STOPPED
+    }
 
     public UrlShortenerController(int port, UrlShortenerHandler handler) throws IOException {
         this.handler = handler;
@@ -95,12 +104,33 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
-    public void start() {
-        server.start();
+    public synchronized void setLinksDao(Dao<String> dao) {
+        if (state != State.NEW) {
+            throw new IllegalStateException("Links DAO can only be set before start or stop");
+        }
+        Objects.requireNonNull(dao);
+        try {
+            handler.setLinksDao(dao);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    public void stop() {
+    public synchronized void start() {
+        if (state != State.NEW) {
+            throw new IllegalStateException("Service has already been started or stopped");
+        }
+        server.start();
+        state = State.STARTED;
+    }
+
+    @Override
+    public synchronized void stop() {
+        if (state == State.STOPPED) {
+            return;
+        }
+        state = State.STOPPED;
         try {
             server.stop(SERVER_STOP_DELAY);
             handler.close();

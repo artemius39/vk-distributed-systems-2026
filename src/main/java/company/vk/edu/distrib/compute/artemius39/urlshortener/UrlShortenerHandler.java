@@ -23,7 +23,7 @@ public class UrlShortenerHandler {
     private static final String HOSTNAME = "localhost";
     private static final int AUTH_FIELD_COUNT = 2;
 
-    private final Dao<String> linkDao;
+    private Dao<String> linkDao;
     private final Dao<String> authDao;
     private final SecureRandom random;
     private final int port;
@@ -195,8 +195,16 @@ public class UrlShortenerHandler {
         return false;
     }
 
+    public void setLinksDao(Dao<String> dao) throws IOException {
+        if (linkDao != dao) {
+            linkDao.close();
+            linkDao = dao;
+        }
+    }
+
     public void close() throws IOException {
-        linkDao.close();
-        authDao.close();
+        try (authDao) {
+            linkDao.close();
+        }
     }
 }
