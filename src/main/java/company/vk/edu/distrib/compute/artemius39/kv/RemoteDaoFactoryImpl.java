@@ -11,10 +11,11 @@ import company.vk.edu.distrib.compute.kv.RemoteDaoFactoryTest;
 
 @RemoteDaoFactoryTest
 public class RemoteDaoFactoryImpl implements RemoteDaoFactory<String> {
+    private static final int EXPECTED_PORT_COUNT = 1;
+
     @Override
-    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition") // проверка, что порт только один, нет смысла в константе
     public Dao<String> create(int... ports) throws IOException {
-        if (ports.length != 1) {
+        if (ports.length != EXPECTED_PORT_COUNT) {
             throw new IllegalArgumentException("Expected exactly one KV service port");
         }
         int port = ports[0];

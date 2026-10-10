@@ -7,12 +7,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.sun.net.httpserver.HttpExchange;
 
 public final class HttpUtils {
     public static final int EMPTY_RESPONSE_LENGTH = -1;
     public static final String ENTITY_PATH = "/v0/entity";
+    private static final Function<String, List<String>> NEW_ARRAYLIST = ignored -> new ArrayList<>();
 
     private HttpUtils() {
         // utility class
@@ -22,12 +24,8 @@ public final class HttpUtils {
         exchange.sendResponseHeaders(status, EMPTY_RESPONSE_LENGTH);
     }
 
-    @SuppressWarnings({
-        // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
-        "PMD.UseConcurrentHashMap",
-        // В цикле создаются списки для новых параметров, это обосновано
-        "PMD.AvoidInstantiatingObjectsInLoops"
-    })
+    // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
+    @SuppressWarnings("PMD.UseConcurrentHashMap")
     public static Map<String, List<String>> parseQueryParams(HttpExchange exchange) {
         Map<String, List<String>> params = new LinkedHashMap<>();
         String query = exchange.getRequestURI().getRawQuery();
@@ -44,7 +42,7 @@ public final class HttpUtils {
             String value = pair.length == 2
                 ? URLDecoder.decode(pair[1], StandardCharsets.UTF_8)
                 : "";
-            params.computeIfAbsent(name, ignored -> new ArrayList<>()).add(value);
+            params.computeIfAbsent(name, NEW_ARRAYLIST).add(value);
         }
         return params;
     }
