@@ -104,7 +104,7 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
-    public synchronized void setLinksDao(Dao<String> dao) {
+    public void setLinksDao(Dao<String> dao) {
         if (state != State.NEW) {
             throw new IllegalStateException("Links DAO can only be set before start or stop");
         }
@@ -117,7 +117,7 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
-    public synchronized void start() {
+    public void start() {
         if (state != State.NEW) {
             throw new IllegalStateException("Service has already been started or stopped");
         }
@@ -126,7 +126,7 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
-    public synchronized void stop() {
+    public void stop() {
         if (state == State.STOPPED) {
             return;
         }
