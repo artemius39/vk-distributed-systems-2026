@@ -2,9 +2,11 @@ package company.vk.edu.distrib.compute.artemius39.kv;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 
 import company.vk.edu.distrib.compute.Dao;
@@ -65,11 +67,11 @@ public class RemoteDao implements Dao<byte[]> {
     }
 
     private URI buildURI(String key) {
-        try {
-            return baseUrl.resolve(HttpUtils.ENTITY_PREFIX).resolve(key);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Illegal key: '" + key + "'", e);
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Key must not be null or empty");
         }
+        String encodedKey = URLEncoder.encode(key, StandardCharsets.UTF_8);
+        return baseUrl.resolve(HttpUtils.ENTITY_PATH + "?id=" + encodedKey);
     }
 
     private IOException unexpectedHttpCodeException(HttpResponse<?> response) {

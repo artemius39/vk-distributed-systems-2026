@@ -4,16 +4,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import company.vk.edu.distrib.compute.Dao;
-import company.vk.edu.distrib.compute.kv.KVService;
 
 public class StringRemoteDao implements Dao<String> {
     private final Dao<byte[]> dao;
-    private final KVService service;
     private boolean closed;
 
-    public StringRemoteDao(Dao<byte[]> dao, KVService service) {
+    public StringRemoteDao(Dao<byte[]> dao) {
         this.dao = dao;
-        this.service = service;
     }
 
     @Override
@@ -40,10 +37,6 @@ public class StringRemoteDao implements Dao<String> {
             return;
         }
         closed = true;
-        try {
-            dao.close();
-        } finally {
-            service.stop();
-        }
+        dao.close();
     }
 }

@@ -1,6 +1,7 @@
 package company.vk.edu.distrib.compute.artemius39.kv;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -87,11 +88,18 @@ public class KVServiceHandler implements AutoCloseable {
 
     private String parseKey(HttpExchange exchange) {
         String path = exchange.getRequestURI().getPath();
-        if (!path.startsWith(HttpUtils.ENTITY_PREFIX)) {
+        if (!HttpUtils.ENTITY_PATH.equals(path)) {
             return null;
         }
-        String key = path.substring(HttpUtils.ENTITY_PREFIX.length());
-        return key.isEmpty() ? null : key;
+        try {
+            List<String> ids = HttpUtils.parseQueryParams(exchange).get("id");
+            if (ids == null || ids.size() != 1 || ids.getFirst().isEmpty()) {
+                return null;
+            }
+            return ids.getFirst();
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override
