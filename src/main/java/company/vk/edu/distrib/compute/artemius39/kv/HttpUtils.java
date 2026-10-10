@@ -23,8 +23,10 @@ public final class HttpUtils {
     }
 
     @SuppressWarnings({
-        "PMD.UseConcurrentHashMap", // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
-        "PMD.AvoidInstantiatingObjectsInLoops" // В цикле создаются списки для новых параметров, это обоснованно
+        // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
+        "PMD.UseConcurrentHashMap",
+        // В цикле создаются списки для новых параметров, это обосновано
+        "PMD.AvoidInstantiatingObjectsInLoops"
     })
     public static Map<String, List<String>> parseQueryParams(HttpExchange exchange) {
         Map<String, List<String>> params = new LinkedHashMap<>();
