@@ -22,8 +22,10 @@ public final class HttpUtils {
         exchange.sendResponseHeaders(status, EMPTY_RESPONSE_LENGTH);
     }
 
-    // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
-    @SuppressWarnings("PMD.UseConcurrentHashMap")
+    @SuppressWarnings({
+        "PMD.UseConcurrentHashMap", // Каждый вызов метода создаёт свою мапу и работает с ней, нет смысла в ConcurrentHashMap
+        "PMD.AvoidInstantiatingObjectsInLoops" // В цикле создаются списки для новых параметров, это обоснованно
+    })
     public static Map<String, List<String>> parseQueryParams(HttpExchange exchange) {
         Map<String, List<String>> params = new LinkedHashMap<>();
         String query = exchange.getRequestURI().getRawQuery();
