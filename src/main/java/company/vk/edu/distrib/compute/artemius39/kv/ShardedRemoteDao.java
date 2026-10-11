@@ -79,6 +79,7 @@ public class ShardedRemoteDao<T> implements Dao<T> {
             throw new IllegalStateException("Shard count must be non zero");
         }
 
+        //
         return shardForKey;
     }
 
