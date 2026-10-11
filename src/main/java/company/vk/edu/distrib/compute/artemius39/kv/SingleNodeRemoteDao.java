@@ -11,11 +11,11 @@ import java.util.NoSuchElementException;
 
 import company.vk.edu.distrib.compute.Dao;
 
-public class RemoteDao implements Dao<byte[]> {
+public class SingleNodeRemoteDao implements Dao<byte[]> {
     private final HttpClient client;
     private final URI baseUrl;
 
-    public RemoteDao(HttpClient client, URI baseUrl) {
+    public SingleNodeRemoteDao(HttpClient client, URI baseUrl) {
         this.client = client;
         this.baseUrl = baseUrl;
     }
