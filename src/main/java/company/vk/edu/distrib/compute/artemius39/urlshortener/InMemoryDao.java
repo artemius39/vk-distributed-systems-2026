@@ -6,7 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import company.vk.edu.distrib.compute.Dao;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class InMemoryDao<T> implements Dao<T> {
     private final ConcurrentMap<String, T> map = new ConcurrentHashMap<>();
 
@@ -30,7 +32,7 @@ public class InMemoryDao<T> implements Dao<T> {
     }
 
     @Override
-    public void close() throws IOException {
-        // nothing to close, everything is in memory
+    public void close() {
+        map.clear();
     }
 }
