@@ -39,7 +39,7 @@ public class ShardedRemoteDao<T> implements Dao<T> {
 
     @Override
     public void close() throws IOException {
-        if (isClosed.compareAndExchange(false, true)) {
+        if (isClosed.compareAndSet(false, true)) {
             IOException exception = null;
             for (Dao<T> shard : shards) {
                 try {

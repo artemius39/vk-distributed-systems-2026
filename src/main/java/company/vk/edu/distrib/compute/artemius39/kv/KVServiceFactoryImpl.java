@@ -10,7 +10,7 @@ import company.vk.edu.distrib.compute.kv.KVServiceTest;
 public class KVServiceFactoryImpl extends AbstractHttpServiceFactory<KVServiceImpl> {
     @Override
     protected KVServiceImpl doCreate(int port) throws IOException {
-        Path dataRoot = Path.of(System.getProperty("user.home"), ".kv", "artemius39");
+        Path dataRoot = Path.of(System.getProperty("user.home"), ".kv", "artemius39", Integer.toString(port));
         Path directory = dataRoot.resolve(Integer.toString(port));
         return new KVServiceImpl("localhost", port, new KVServiceHandler(new DiskDao(directory)));
     }
