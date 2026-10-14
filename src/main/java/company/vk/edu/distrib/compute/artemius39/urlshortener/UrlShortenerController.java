@@ -11,18 +11,17 @@ public class UrlShortenerController implements UrlShortenerService {
     public static final String LINKS_URI = "/v0/links/";
     private static final String ROOT_URI = "/";
     private static final int SERVER_STOP_DELAY = 1;
-    private static final String HOSTNAME = "localhost";
 
     private final HttpServer server;
     private final UrlShortenerHandler handler;
 
-    public UrlShortenerController(int port, UrlShortenerHandler handler) throws IOException {
+    public UrlShortenerController(InetSocketAddress address, UrlShortenerHandler handler) throws IOException {
         this.handler = handler;
-        this.server = createServer(port);
+        this.server = createServer(address);
     }
 
-    private HttpServer createServer(int port) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(HOSTNAME, port), 0);
+    private HttpServer createServer(InetSocketAddress address) throws IOException {
+        HttpServer server = HttpServer.create(address, 0);
         setStatusMappings(server);
         setLinksMappings(server);
         setAuthMappings(server);
