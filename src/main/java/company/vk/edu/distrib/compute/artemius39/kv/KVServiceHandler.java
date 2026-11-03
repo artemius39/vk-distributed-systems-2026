@@ -9,9 +9,15 @@ import company.vk.edu.distrib.compute.Dao;
 
 public class KVServiceHandler implements AutoCloseable {
     private final Dao<byte[]> dao;
+    private final String entityPath;
 
     public KVServiceHandler(Dao<byte[]> dao) {
+        this(dao, HttpUtils.ENTITY_PATH);
+    }
+
+    public KVServiceHandler(Dao<byte[]> dao, String entityPath) {
         this.dao = dao;
+        this.entityPath = entityPath;
     }
 
     public void status(HttpExchange exchange) throws IOException {
@@ -37,7 +43,7 @@ public class KVServiceHandler implements AutoCloseable {
             HttpUtils.sendEmpty(exchange, HttpCodes.INTERNAL_SERVER_ERROR);
             return;
         }
-        exchange.sendResponseHeaders(HttpCodes.OK, value.length);
+        exchange.sendResponseHeaders(HttpCodes.OK, value.length == 0 ? HttpUtils.EMPTY_RESPONSE_LENGTH : value.length);
         exchange.getResponseBody().write(value);
     }
 
@@ -88,7 +94,7 @@ public class KVServiceHandler implements AutoCloseable {
 
     private String parseKey(HttpExchange exchange) {
         String path = exchange.getRequestURI().getPath();
-        if (!HttpUtils.ENTITY_PATH.equals(path)) {
+        if (!entityPath.equals(path)) {
             return null;
         }
         try {

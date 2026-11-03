@@ -59,6 +59,10 @@ public class ShardedRemoteDao<T> implements Dao<T> {
     }
 
     private Dao<T> pickShardForKey(String key) {
+        return shards.get(pickShardIndex(key, shards.size()));
+    }
+
+    public static int pickShardIndex(String key, int shardCount) {
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("SHA-256");
@@ -66,24 +70,23 @@ public class ShardedRemoteDao<T> implements Dao<T> {
             throw new IllegalStateException("SHA-256 must be provided", e);
         }
 
-        Dao<T> shardForKey = null;
+        int shardForKey = -1;
         long maxWeight = Long.MIN_VALUE;
-        for (int shardId = 0; shardId < shards.size(); shardId++) {
+        for (int shardId = 0; shardId < shardCount; shardId++) {
             long weight = randomWeight(md, shardId, key);
-            if (weight > maxWeight) {
+            if (shardForKey == -1 || weight > maxWeight) {
                 maxWeight = weight;
-                shardForKey = shards.get(shardId);
+                shardForKey = shardId;
             }
         }
-        if (shardForKey == null) {
+        if (shardForKey == -1) {
             throw new IllegalStateException("Shard count must be non zero");
         }
 
-        //
         return shardForKey;
     }
 
-    private long randomWeight(MessageDigest md, int shardId, String key) {
+    private static long randomWeight(MessageDigest md, int shardId, String key) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.BYTES);
         byteBuffer.putInt(shardId);
         byte[] shardIdBytes = byteBuffer.array();

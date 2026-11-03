@@ -7,8 +7,12 @@ import java.util.Map;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpServerBuilder {
+    private static final Logger log = LoggerFactory.getLogger(HttpServerBuilder.class);
+
     private final Map<String, Map<String, HttpHandler>> handlers;
     private String host;
     private int port;
@@ -46,7 +50,12 @@ public class HttpServerBuilder {
                 if (handler == null) {
                     HttpUtils.sendEmpty(exchange, HttpCodes.METHOD_NOT_ALLOWED);
                 } else {
-                    handler.handle(exchange);
+                    try {
+                        handler.handle(exchange);
+                    } catch (RuntimeException e) {
+                        log.error("Failed to handle request", e);
+                        HttpUtils.sendEmpty(exchange, HttpCodes.INTERNAL_SERVER_ERROR);
+                    }
                 }
             }
         }));
