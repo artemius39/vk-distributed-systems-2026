@@ -2,6 +2,7 @@ package company.vk.edu.distrib.compute.kl1dd.urlshortener;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
 
 import java.io.IOException;
@@ -25,8 +26,9 @@ public class MyUrlShortenerService implements UrlShortenerService {
 
     private final SecureRandom random = new SecureRandom();
     private final HttpServer httpServer;
-    private final MyDao linksDao;
+    private Dao<String> linksDao;
     private final AuthService authService;
+    private boolean startedOrStopped;
 
     public MyUrlShortenerService(HttpServer httpServer) {
         this.httpServer = httpServer;
@@ -37,6 +39,15 @@ public class MyUrlShortenerService implements UrlShortenerService {
         httpServer.createContext("/v0/links", this::handleLinks);
         httpServer.createContext("/", this::handleRedirect);
         httpServer.createContext("/internal/users", this::handleUsers);
+    }
+
+    @Override
+    public void setLinksDao(Dao<String> dao) {
+        if (startedOrStopped) {
+            throw new IllegalStateException();
+        }
+
+        this.linksDao = dao;
     }
 
     private void handleUsers(HttpExchange exchange) throws IOException {
@@ -266,11 +277,13 @@ public class MyUrlShortenerService implements UrlShortenerService {
 
     @Override
     public void start() {
+        startedOrStopped = true;
         httpServer.start();
     }
 
     @Override
     public void stop() {
+        startedOrStopped = true;
         httpServer.stop(STOP_DELAY_SECONDS);
     }
 }
