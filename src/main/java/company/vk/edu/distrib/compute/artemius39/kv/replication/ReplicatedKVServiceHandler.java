@@ -195,7 +195,7 @@ public class ReplicatedKVServiceHandler implements AutoCloseable {
                 .timeout(REPLICA_TIMEOUT)
                 .build()
         );
-        HttpUtils.sendEmpty(exchange, responses.size() >= ack ? HttpCodes.ACCEPTED : HttpCodes.SERVICE_UNAVAILABLE);
+        HttpUtils.sendEmpty(exchange, responses.size() >= ack ? HttpCodes.OK : HttpCodes.SERVICE_UNAVAILABLE);
     }
 
     private URI replicaUri(URI baseUri, String key) {
