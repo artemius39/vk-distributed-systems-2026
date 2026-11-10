@@ -1,4 +1,4 @@
-package company.vk.edu.distrib.compute.miiishenka.urlshortener.exception;
+package company.vk.edu.distrib.compute.miiishenka.http.exception;
 
 public class NotFoundException extends HttpStatusException {
     @Override

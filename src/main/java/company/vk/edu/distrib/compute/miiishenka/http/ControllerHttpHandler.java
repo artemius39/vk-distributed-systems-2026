@@ -1,11 +1,11 @@
-package company.vk.edu.distrib.compute.miiishenka.urlshortener;
+package company.vk.edu.distrib.compute.miiishenka.http;
 
 import java.io.IOException;
+import java.util.NoSuchElementException;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import company.vk.edu.distrib.compute.miiishenka.urlshortener.controller.BaseController;
-import company.vk.edu.distrib.compute.miiishenka.urlshortener.exception.HttpStatusException;
+import company.vk.edu.distrib.compute.miiishenka.http.exception.HttpStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +30,8 @@ public class ControllerHttpHandler implements HttpHandler {
                 }
             } catch (HttpStatusException e) {
                 exchange.sendResponseHeaders(e.getStatusCode(), 0);
+            } catch (NoSuchElementException e) {
+                exchange.sendResponseHeaders(404, 0);
             } catch (Exception e) {
                 log.error("Error while handling request", e);
                 exchange.sendResponseHeaders(500, 0);

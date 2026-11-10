@@ -3,6 +3,7 @@ package company.vk.edu.distrib.compute.flighen.urlshortener;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import company.vk.edu.distrib.compute.Dao;
+import company.vk.edu.distrib.compute.flighen.kv.LinksDaoListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +11,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public class RedirectHandler implements HttpHandler {
+public class RedirectHandler implements HttpHandler, LinksDaoListener {
     private final Logger log =
             LoggerFactory.getLogger(RedirectHandler.class);
 
@@ -19,7 +20,7 @@ public class RedirectHandler implements HttpHandler {
     private static final int HTTP_UNPROCESSABLE_ENTITY = 422;
     private static final int HTTP_NOT_FOUND = 404;
 
-    private final Dao<String> dao;
+    private Dao<String> dao;
 
     public RedirectHandler(Dao<String> dao) {
         this.dao = dao;
@@ -38,7 +39,6 @@ public class RedirectHandler implements HttpHandler {
 
                 if (id == null || !IdUtils.isValidId(id)) {
                     exchange.sendResponseHeaders(HTTP_UNPROCESSABLE_ENTITY, -1);
-                    exchange.close();
                     return;
                 }
 
@@ -69,7 +69,10 @@ public class RedirectHandler implements HttpHandler {
 
             throw e;
         }
+    }
 
-        exchange.close();
+    @Override
+    public void onLinksDaoChanged(Dao<String> dao) {
+        this.dao = dao;
     }
 }
