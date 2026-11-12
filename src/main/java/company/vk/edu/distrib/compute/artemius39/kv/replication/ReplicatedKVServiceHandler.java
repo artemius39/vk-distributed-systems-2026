@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 public class ReplicatedKVServiceHandler implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(ReplicatedKVServiceHandler.class);
     private static final Duration REPLICA_TIMEOUT = Duration.ofSeconds(1);
+    private static final int EXPECTED_ACK_PARAMETER_COUNT = 1;
 
     private final HttpClient replicaClient;
     private final ReplicaConfig replicaConfig;
@@ -96,7 +97,7 @@ public class ReplicatedKVServiceHandler implements AutoCloseable {
         if (acks == null) {
             return 1;
         }
-        if (acks.size() != 1) {
+        if (acks.size() != EXPECTED_ACK_PARAMETER_COUNT) {
             return null;
         }
         String ackStr = acks.getFirst();
