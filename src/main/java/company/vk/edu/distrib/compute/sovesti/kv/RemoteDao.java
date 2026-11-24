@@ -17,7 +17,6 @@ import company.vk.edu.distrib.compute.sovesti.urlshortener.http.StatusCodeConsta
 record RemoteDao(int port, HttpClient client) implements Dao<byte[]> {
 
     RemoteDao {
-        Objects.requireNonNull(port);
         Objects.requireNonNull(client);
     }
 

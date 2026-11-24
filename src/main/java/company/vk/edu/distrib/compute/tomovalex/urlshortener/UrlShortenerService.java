@@ -6,28 +6,26 @@ import company.vk.edu.distrib.compute.Dao;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.BufferOverflowException;
 import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
-import java.util.Random;
+import java.util.Objects;
 
 public class UrlShortenerService implements company.vk.edu.distrib.compute.urlshortener.UrlShortenerService {
-    private static final String ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final String GET = "GET";
     private static final String POST = "POST";
     private static final String PUT = "PUT";
     private static final String DELETE = "DELETE";
     private static final String STATUS_PATH = "/v0/status";
-    private static final String LINKS_PATH = "/v0/links";
-    private static final int ID_LEN = 10;
-    private static final Random RND = new Random();
 
     private final int port;
     private final HttpServer server;
-    private final Dao<String> linksDao;
+    private Dao<String> linksDao;
     private final BasicAuthentication authentication;
+    private boolean started;
+    private boolean stopped;
 
     public UrlShortenerService(int port, Dao<String> linksDao, Dao<String> usersDao) throws IOException {
         this.port = port;
@@ -35,7 +33,7 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
         this.authentication = new BasicAuthentication(usersDao);
         this.server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext(STATUS_PATH, this::handleStatus);
-        server.createContext(LINKS_PATH, this::handleLinks);
+        server.createContext(LinkUtils.LINKS_PATH, this::handleLinks);
         server.createContext(UserRegistrationHandler.PATH, new UserRegistrationHandler(usersDao));
         server.createContext("/", this::handleRedirect);
     }
@@ -43,11 +41,26 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
     @Override
     public void start() {
         server.start();
+        started = true;
     }
 
     @Override
     public void stop() {
+        stopped = true;
         server.stop(1);
+        try {
+            linksDao.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public void setLinksDao(Dao<String> dao) {
+        if (started || stopped) {
+            throw new IllegalStateException();
+        }
+        linksDao = Objects.requireNonNull(dao);
     }
 
     private void handleStatus(HttpExchange exchange) throws IOException {
@@ -95,20 +108,20 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
     }
 
     private void handleCreateLink(HttpExchange exchange) throws IOException {
-        if (!LINKS_PATH.equals(exchange.getRequestURI().getPath())) {
+        if (!LinkUtils.LINKS_PATH.equals(exchange.getRequestURI().getPath())) {
             sendEmptyResponse(exchange, 404);
             return;
         }
 
         String url = RequestBodyUtils.read(exchange.getRequestBody());
-        if (!isValidUrl(url)) {
+        if (!LinkUtils.isValidUrl(url)) {
             sendEmptyResponse(exchange, 422);
             return;
         }
 
         String id = generateId();
         linksDao.upsert(id, url);
-        sendResponse(exchange, 201, "http://localhost:%d/%s".formatted(port, id));
+        sendResponse(exchange, 201, LinkUtils.createShortLink(port, id));
     }
 
     private void handleUpdateLink(HttpExchange exchange) throws IOException {
@@ -118,7 +131,7 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
         }
 
         String url = RequestBodyUtils.read(exchange.getRequestBody());
-        if (!isValidUrl(url)) {
+        if (!LinkUtils.isValidUrl(url)) {
             sendEmptyResponse(exchange, 422);
             return;
         }
@@ -152,7 +165,7 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
         }
 
         String id = exchange.getRequestURI().getPath().substring(1);
-        if (!isValidId(id)) {
+        if (!LinkUtils.isValidId(id)) {
             sendEmptyResponse(exchange, 422);
             return;
         }
@@ -167,57 +180,24 @@ public class UrlShortenerService implements company.vk.edu.distrib.compute.urlsh
     }
 
     private static String getValidLinkId(HttpExchange exchange) throws IOException {
-        String id = getIdFromLinksPath(exchange);
+        String id = LinkUtils.getIdFromLinksPath(exchange.getRequestURI().getPath());
         if (id == null) {
             sendEmptyResponse(exchange, 404);
             return null;
         }
-        if (!isValidId(id)) {
+        if (!LinkUtils.isValidId(id)) {
             sendEmptyResponse(exchange, 422);
             return null;
         }
         return id;
     }
 
-    private static String getIdFromLinksPath(HttpExchange exchange) {
-        String path = exchange.getRequestURI().getPath();
-        String pathWithId = LINKS_PATH + "/";
-        if (!path.startsWith(pathWithId)) {
-            return null;
-        }
-        return path.substring(pathWithId.length());
-    }
-
-    private static boolean isValidId(String id) {
-        return id.matches("[A-Za-z0-9]{10}");
-    }
-
-    private static boolean isValidUrl(String url) {
-        try {
-            var uri = URI.create(url);
-            return uri.getHost() != null
-                    && ("http".equalsIgnoreCase(uri.getScheme())
-                    || "https".equalsIgnoreCase(uri.getScheme()));
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
-
     private String generateId() throws IOException {
-        String generatedId = createRandomId();
+        String generatedId = LinkUtils.createRandomId();
         while (linkExists(generatedId)) {
-            generatedId = createRandomId();
+            generatedId = LinkUtils.createRandomId();
         }
         return generatedId;
-    }
-
-    private static String createRandomId() {
-        StringBuilder id = new StringBuilder();
-        for (int i = 0; i < ID_LEN; i++) {
-            int index = RND.nextInt(ID_CHARS.length());
-            id.append(ID_CHARS.charAt(index));
-        }
-        return id.toString();
     }
 
     private boolean linkExists(String id) throws IOException {

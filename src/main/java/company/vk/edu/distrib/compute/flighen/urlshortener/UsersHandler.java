@@ -56,8 +56,6 @@ public class UsersHandler implements HttpHandler {
             }
             throw e;
         }
-
-        exchange.close();
     }
 
     private boolean parseData(String data) throws IOException {

@@ -25,7 +25,7 @@ public class AuthFilter extends Filter {
 
     public AuthFilter(Dao<String> dao) {
         super();
-        usersDao = dao;
+        this.usersDao = dao;
     }
 
     @Override
@@ -96,7 +96,12 @@ public class AuthFilter extends Filter {
             return new String[] {};
         }
 
-        byte[] decoded = Base64.getDecoder().decode(args[1]);
+        byte[] decoded;
+        try {
+            decoded = Base64.getDecoder().decode(args[1]);
+        } catch (IllegalArgumentException e) {
+            return new String[] {};
+        }
 
         String userPass = new String(decoded, StandardCharsets.UTF_8);
 
@@ -104,12 +109,14 @@ public class AuthFilter extends Filter {
             return new String[] {};
         }
 
-        return userPass.split(":");
+        return userPass.split(":", AUTH_HEADER_PARTS_COUNT);
     }
 
     private void returnUnAuthorized(HttpExchange exchange) throws IOException {
-        exchange.getResponseHeaders()
-                .add("WWW-Authenticate", "Basic REALM=\"%s\", charset=\"UTF-8\"".formatted(REALM));
-        exchange.sendResponseHeaders(HTTP_UNAUTHORIZED, -1);
+        try (exchange) {
+            exchange.getResponseHeaders()
+                    .add("WWW-Authenticate", "Basic REALM=\"%s\", charset=\"UTF-8\"".formatted(REALM));
+            exchange.sendResponseHeaders(HTTP_UNAUTHORIZED, -1);
+        }
     }
 }
