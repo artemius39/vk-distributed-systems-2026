@@ -29,12 +29,13 @@ public class ModerationServiceFactoryImpl implements ModerationServiceFactory {
             }
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
                 List<String> words = new ArrayList<>();
-                String line;
-                while ((line = reader.readLine()) != null) {
+                String line = reader.readLine();
+                while (line != null) {
                     String word = line.strip().toLowerCase(Locale.ROOT);
                     if (!word.isEmpty()) {
                         words.add(word);
                     }
+                    line = reader.readLine();
                 }
                 return words;
             }

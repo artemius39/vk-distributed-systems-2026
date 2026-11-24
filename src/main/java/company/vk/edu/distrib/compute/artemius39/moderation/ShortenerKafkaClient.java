@@ -30,7 +30,7 @@ public final class ShortenerKafkaClient extends KafkaWorker {
     }
 
     public void publish(LinkCreatedEvent event) {
-        if (!pending.offer(event)) {
+        if (!pending.offer(event) && log.isWarnEnabled()) {
             log.warn("Moderation queue is full, link {} was not sent", event.id());
         }
     }
@@ -58,7 +58,9 @@ public final class ShortenerKafkaClient extends KafkaWorker {
         try {
             result = EventCodecUtils.decodeResult(record.key(), record.value());
         } catch (IllegalArgumentException | DateTimeException | CharacterCodingException e) {
-            log.warn("Invalid moderation result at offset {}", record.offset(), e);
+            if (log.isWarnEnabled()) {
+                log.warn("Invalid moderation result at offset {}", record.offset(), e);
+            }
             return;
         }
         if (!result.passed()) {
