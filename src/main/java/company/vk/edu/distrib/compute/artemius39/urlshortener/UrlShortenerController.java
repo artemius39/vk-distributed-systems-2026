@@ -14,6 +14,7 @@ public class UrlShortenerController implements UrlShortenerService {
 
     private final HttpServer server;
     private final UrlShortenerHandler handler;
+    private boolean startedOrStopped;
 
     public UrlShortenerController(InetSocketAddress address, UrlShortenerHandler handler) throws IOException {
         this.handler = handler;
@@ -94,12 +95,23 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
+    public void setKafkaBootstrapServers(String bootstrapServers) {
+        if (startedOrStopped) {
+            throw new IllegalStateException("Kafka must be configured before start");
+        }
+        handler.enableModeration(bootstrapServers, server.getAddress().getPort());
+    }
+
+    @Override
     public void start() {
+        startedOrStopped = true;
+        handler.startModeration();
         server.start();
     }
 
     @Override
     public void stop() {
+        startedOrStopped = true;
         try {
             server.stop(SERVER_STOP_DELAY);
             handler.close();
