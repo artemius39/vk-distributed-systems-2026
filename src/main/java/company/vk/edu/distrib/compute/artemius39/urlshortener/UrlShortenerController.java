@@ -8,8 +8,10 @@ import java.util.Objects;
 import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class UrlShortenerController implements UrlShortenerService {
     public static final String LINKS_URI = "/v0/links/";
     private static final String ROOT_URI = "/";
