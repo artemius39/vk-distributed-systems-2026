@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 abstract class KafkaWorker {
     private static final Logger log = LoggerFactory.getLogger(KafkaWorker.class);
     protected static final Duration POLL_TIMEOUT = Duration.ofMillis(100);
-    private static final Duration CLOSE_TIMEOUT = Duration.ofMillis(500);
     private static final Duration RETRY_DELAY = Duration.ofMillis(500);
     private static final Duration STOP_TIMEOUT = Duration.ofSeconds(2);
 
@@ -86,17 +85,9 @@ abstract class KafkaWorker {
     private void runSession() throws IOException, ExecutionException, InterruptedException {
         try (KafkaProducer<byte[], byte[]> producer = createProducer();
              KafkaConsumer<byte[], byte[]> consumer = createConsumer()) {
-            try {
-                consumer.subscribe(List.of(topic));
-                while (isRunning()) {
-                    process(producer, consumer);
-                }
-            } finally {
-                try {
-                    consumer.close(CLOSE_TIMEOUT);
-                } finally {
-                    producer.close(CLOSE_TIMEOUT);
-                }
+            consumer.subscribe(List.of(topic));
+            while (isRunning()) {
+                process(producer, consumer);
             }
         }
     }
