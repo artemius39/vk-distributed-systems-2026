@@ -3,12 +3,16 @@ package company.vk.edu.distrib.compute.artemius39.urlshortener;
 import java.io.IOException;
 import java.net.URI;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.stream.IntStream;
 
 import com.sun.net.httpserver.HttpExchange;
 import company.vk.edu.distrib.compute.Dao;
+import company.vk.edu.distrib.compute.artemius39.moderation.ShortenerKafkaClient;
+import company.vk.edu.distrib.compute.moderation.LinkCreatedEvent;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public class UrlShortenerHandler {
@@ -26,11 +30,18 @@ public class UrlShortenerHandler {
     private final Dao<String> authDao;
     private final SecureRandom random;
     private Dao<String> linkDao;
+    private @Nullable ShortenerKafkaClient moderationClient;
 
     public UrlShortenerHandler(Dao<String> linkDao, Dao<String> authDao, SecureRandom random) {
         this.linkDao = linkDao;
         this.authDao = authDao;
         this.random = random;
+    }
+
+    public void startModeration(String bootstrapServers, int port) {
+        ShortenerKafkaClient client = new ShortenerKafkaClient(bootstrapServers, port, linkDao);
+        moderationClient = client;
+        client.start();
     }
 
     public void registerUser(HttpExchange exchange) throws IOException {
@@ -78,6 +89,9 @@ public class UrlShortenerHandler {
         }
         String shortLink = generateShortUrl();
         linkDao.upsert(shortLink, longLink);
+        if (moderationClient != null) {
+            moderationClient.publish(new LinkCreatedEvent(shortLink, longLink, Instant.now()));
+        }
         String fullLink = getFullLink(exchange, shortLink);
         HttpUtils.sendResponse(exchange, 201, fullLink);
     }
@@ -205,6 +219,9 @@ public class UrlShortenerHandler {
     }
 
     public void close() throws IOException {
+        if (moderationClient != null) {
+            moderationClient.stop();
+        }
         try (authDao) {
             linkDao.close();
         }

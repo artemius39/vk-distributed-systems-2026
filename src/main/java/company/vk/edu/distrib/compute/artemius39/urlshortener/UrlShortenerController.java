@@ -8,6 +8,7 @@ import java.util.Objects;
 import com.sun.net.httpserver.HttpServer;
 import company.vk.edu.distrib.compute.Dao;
 import company.vk.edu.distrib.compute.urlshortener.UrlShortenerService;
+import org.jspecify.annotations.Nullable;
 
 public class UrlShortenerController implements UrlShortenerService {
     public static final String LINKS_URI = "/v0/links/";
@@ -17,6 +18,7 @@ public class UrlShortenerController implements UrlShortenerService {
     private final HttpServer server;
     private final UrlShortenerHandler handler;
     private State state = State.NEW;
+    private @Nullable String kafkaBootstrapServers;
 
     private enum State {
         NEW,
@@ -116,9 +118,20 @@ public class UrlShortenerController implements UrlShortenerService {
     }
 
     @Override
+    public void setKafkaBootstrapServers(String bootstrapServers) {
+        if (state != State.NEW) {
+            throw new IllegalStateException("Kafka must be configured before start or stop");
+        }
+        kafkaBootstrapServers = Objects.requireNonNull(bootstrapServers);
+    }
+
+    @Override
     public void start() {
         if (state != State.NEW) {
             throw new IllegalStateException("Service has already been started or stopped");
+        }
+        if (kafkaBootstrapServers != null) {
+            handler.startModeration(kafkaBootstrapServers, server.getAddress().getPort());
         }
         server.start();
         state = State.STARTED;
